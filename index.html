@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Management</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .container { max-width: 800px; margin: auto; }
+    .form-input { margin-bottom: 10px; }
+    .form-input input, .form-input textarea { width: 100%; padding: 8px; }
+    .form-input button { padding: 10px 15px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+    .task { border: 1px solid #ddd; padding: 10px; margin: 10px 0; }
+    .task button { padding: 5px 10px; margin-left: 10px; }
+    .login-form input, .login-form button { padding: 10px; width: 100%; margin-bottom: 10px; }
+    .login-form button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<div class="container" id="login-container">
+  <h2>Login</h2>
+  <div class="login-form">
+    <input type="email" id="email" placeholder="Email" />
+    <input type="password" id="password" placeholder="Password" />
+    <button onclick="login()">Login</button>
+  </div>
+</div>
+
+<div class="container" id="employee-container" style="display:none;">
+  <h2>Employee Dashboard</h2>
+  <button onclick="logout()">Logout</button>
+  <div>
+    <h3>Add Task</h3>
+    <div class="form-input">
+      <input type="text" id="company-name" placeholder="Company Name" />
+    </div>
+    <div class="form-input">
+      <input type="date" id="completion-date" />
+    </div>
+    <div class="form-input">
+      <textarea id="task-description" placeholder="Task Description"></textarea>
+    </div>
+    <div class="form-input">
+      <input type="file" id="file-upload" />
+    </div>
+    <button onclick="saveTask()">Save Task</button>
+  </div>
+
+  <h3>My Tasks</h3>
+  <div id="task-list"></div>
+</div>
+
+<div class="container" id="admin-container" style="display:none;">
+  <h2>Admin Dashboard</h2>
+  <button onclick="logout()">Logout</button>
+  <h3>All Tasks</h3>
+  <div id="admin-task-list"></div>
+</div>
+
+<script>
+  const adminCredentials = { email: "manager@amrtm.sa", password: "Saleh@amrtm2030" };
+  const employees = {
+    "safvanmelethil2@gmail.com": { name: "Safvan", password: "Safvan@123" },
+    "jumana@email.com": { name: "Jumana", password: "" },
+    "abdullah@email.com": { name: "Abdullah", password: "" }
+  };
+
+  function login() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    
+    if (email === adminCredentials.email && password === adminCredentials.password) {
+      localStorage.setItem('role', 'admin');
+      showAdminDashboard();
+    } else if (employees[email] && employees[email].password === password) {
+      localStorage.setItem('role', 'employee');
+      localStorage.setItem('employeeName', employees[email].name);
+      showEmployeeDashboard();
+    } else {
+      alert("Invalid credentials.");
+    }
+  }
+
+  function showAdminDashboard() {
+    document.getElementById('login-container').style.display = 'none';
+    document.getElementById('admin-container').style.display = 'block';
+    displayAdminTasks();
+  }
+
+  function showEmployeeDashboard() {
+    document.getElementById('login-container').style.display = 'none';
+    document.getElementById('employee-container').style.display = 'block';
+    displayEmployeeTasks();
+  }
+
+  function saveTask() {
+    const companyName = document.getElementById("company-name").value;
+    const completionDate = document.getElementById("completion-date").value;
+    const taskDescription = document.getElementById("task-description").value;
+    const fileUpload = document.getElementById("file-upload").files[0];
+    const employeeName = localStorage.getItem('employeeName');
+    
+    if (!companyName || !completionDate || !taskDescription) {
+      alert("All fields are required.");
+      return;
+    }
+    
+    const task = {
+      employee: employeeName,
+      companyName,
+      completionDate,
+      task: taskDescription,
+      file: fileUpload ? fileUpload.name : '',
+      id: new Date().getTime()
+    };
+
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    tasks.push(task);
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+
+    alert("Task saved!");
+    displayEmployeeTasks();
+  }
+
+  function displayEmployeeTasks() {
+    const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    const employeeName = localStorage.getItem('employeeName');
+    const taskList = tasks.filter(task => task.employee === employeeName);
+
+    const taskListContainer = document.getElementById("task-list");
+    taskListContainer.innerHTML = taskList.map(task => `
+      <div class="task">
+        <strong>${task.companyName}</strong> - ${task.completionDate} - ${task.task}
+        <button onclick="editTask(${task.id})">Edit</button>
+        <button onclick="deleteTask(${task.id})">Delete</button>
+      </div>
+    `).join('');
+  }
+
+  function editTask(id) {
+    const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    const task = tasks.find(t => t.id === id);
+    
+    document.getElementById("company-name").value = task.companyName;
+    document.getElementById("completion-date").value = task.completionDate;
+    document.getElementById("task-description").value = task.task;
+    localStorage.setItem('editingTaskId', id);
+  }
+
+  function deleteTask(id) {
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    tasks = tasks.filter(task => task.id !== id);
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+
+    displayEmployeeTasks();
+  }
+
+  function displayAdminTasks() {
+    const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    const taskListContainer = document.getElementById("admin-task-list");
+    
+    taskListContainer.innerHTML = tasks.map(task => `
+      <div class="task">
+        <strong>${task.companyName}</strong> - ${task.completionDate} - ${task.task} 
+        (by ${task.employee})
+      </div>
+    `).join('');
+  }
+
+  function logout() {
+    // Clear localStorage to remove the logged-in user data
+    localStorage.removeItem('role');
+    localStorage.removeItem('employeeName');
+    
+    // Redirect the user back to the login page
+    document.getElementById('login-container').style.display = 'block';
+    document.getElementById('employee-container').style.display = 'none';
+    document.getElementById('admin-container').style.display = 'none';
+    
+    // Clear any other inputs (optional)
+    document.getElementById("email").value = "";
+    document.getElementById("password").value = "";
+  }
+
+  // Show appropriate dashboard based on user role
+  if (localStorage.getItem('role') === 'admin') {
+    showAdminDashboard();
+  } else if (localStorage.getItem('role') === 'employee') {
+    showEmployeeDashboard();
+  }
+
+</script>
+
+</body>
+</html>
