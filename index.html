@@ -14,10 +14,14 @@
     .task button { padding: 5px 10px; margin-left: 10px; }
     .login-form input, .login-form button { padding: 10px; width: 100%; margin-bottom: 10px; }
     .login-form button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+    .status-started { background-color: red; color: white; }
+    .status-completed { background-color: green; color: white; }
+    .status-ended { background-color: yellow; color: black; }
   </style>
 </head>
 <body>
 
+<!-- Login Section -->
 <div class="container" id="login-container">
   <h2>Login</h2>
   <div class="login-form">
@@ -27,30 +31,40 @@
   </div>
 </div>
 
+<!-- Employee Dashboard -->
 <div class="container" id="employee-container" style="display:none;">
   <h2>Employee Dashboard</h2>
   <button onclick="logout()">Logout</button>
-  <div>
-    <h3>Add Task</h3>
-    <div class="form-input">
-      <input type="text" id="company-name" placeholder="Company Name" />
-    </div>
-    <div class="form-input">
-      <input type="date" id="completion-date" />
-    </div>
-    <div class="form-input">
-      <textarea id="task-description" placeholder="Task Description"></textarea>
-    </div>
-    <div class="form-input">
-      <input type="file" id="file-upload" />
-    </div>
-    <button onclick="saveTask()">Save Task</button>
+  <h3>Add Task</h3>
+  <div class="form-input">
+    <input type="text" id="company-name" placeholder="Company Name" />
   </div>
+  <div class="form-input">
+    <input type="text" id="service" placeholder="Service" />
+  </div>
+  <div class="form-input">
+    <input type="date" id="start-date" />
+  </div>
+  <div class="form-input">
+    <input type="date" id="expected-end-date" />
+  </div>
+  <div class="form-input">
+    <textarea id="task-description" placeholder="Task Description"></textarea>
+  </div>
+  <div class="form-input">
+    <select id="task-status">
+      <option value="started">Started</option>
+      <option value="completed">Completed</option>
+      <option value="ended">Ended</option>
+    </select>
+  </div>
+  <button onclick="saveTask()">Save Task</button>
 
   <h3>My Tasks</h3>
   <div id="task-list"></div>
 </div>
 
+<!-- Admin Dashboard -->
 <div class="container" id="admin-container" style="display:none;">
   <h2>Admin Dashboard</h2>
   <button onclick="logout()">Logout</button>
@@ -59,137 +73,144 @@
 </div>
 
 <script>
-  const adminCredentials = { email: "manager@amrtm.sa", password: "Saleh@amrtm2030" };
+  // Simulated Database (Using localStorage)
   const employees = {
-    "safvanmelethil2@gmail.com": { name: "Safvan", password: "Safvan@123" },
-    "jumana@email.com": { name: "Jumana", password: "" },
-    "abdullah@email.com": { name: "Abdullah", password: "" }
+    "safvanmelethil2@gmail.com": { name: "Safvan", password: "12345" },
+    "jumana@email.com": { name: "Jumana", password: "12345" },
+    "abdullah@email.com": { name: "Abdullah", password: "12345" },
   };
 
+  const adminCredentials = { email: "manager@amrtm.sa", password: "12345" };
+
   function login() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-    
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+
     if (email === adminCredentials.email && password === adminCredentials.password) {
-      localStorage.setItem('role', 'admin');
+      localStorage.setItem("role", "admin");
       showAdminDashboard();
     } else if (employees[email] && employees[email].password === password) {
-      localStorage.setItem('role', 'employee');
-      localStorage.setItem('employeeName', employees[email].name);
+      localStorage.setItem("role", "employee");
+      localStorage.setItem("employeeName", employees[email].name);
       showEmployeeDashboard();
     } else {
-      alert("Invalid credentials.");
+      alert("Invalid email or password.");
     }
   }
 
   function showAdminDashboard() {
-    document.getElementById('login-container').style.display = 'none';
-    document.getElementById('admin-container').style.display = 'block';
+    document.getElementById("login-container").style.display = "none";
+    document.getElementById("admin-container").style.display = "block";
     displayAdminTasks();
   }
 
   function showEmployeeDashboard() {
-    document.getElementById('login-container').style.display = 'none';
-    document.getElementById('employee-container').style.display = 'block';
+    document.getElementById("login-container").style.display = "none";
+    document.getElementById("employee-container").style.display = "block";
     displayEmployeeTasks();
   }
 
+  function logout() {
+    localStorage.removeItem("role");
+    localStorage.removeItem("employeeName");
+    document.getElementById("login-container").style.display = "block";
+    document.getElementById("employee-container").style.display = "none";
+    document.getElementById("admin-container").style.display = "none";
+  }
+
   function saveTask() {
-    const companyName = document.getElementById("company-name").value;
-    const completionDate = document.getElementById("completion-date").value;
-    const taskDescription = document.getElementById("task-description").value;
-    const fileUpload = document.getElementById("file-upload").files[0];
-    const employeeName = localStorage.getItem('employeeName');
-    
-    if (!companyName || !completionDate || !taskDescription) {
+    const companyName = document.getElementById("company-name").value.trim();
+    const service = document.getElementById("service").value.trim();
+    const startDate = document.getElementById("start-date").value;
+    const expectedEndDate = document.getElementById("expected-end-date").value;
+    const description = document.getElementById("task-description").value.trim();
+    const status = document.getElementById("task-status").value;
+    const employeeName = localStorage.getItem("employeeName");
+
+    if (!companyName || !service || !startDate || !expectedEndDate || !description) {
       alert("All fields are required.");
       return;
     }
-    
+
     const task = {
-      employee: employeeName,
       companyName,
-      completionDate,
-      task: taskDescription,
-      file: fileUpload ? fileUpload.name : '',
-      id: new Date().getTime()
+      service,
+      startDate,
+      expectedEndDate,
+      description,
+      status,
+      employeeName,
+      id: new Date().getTime(),
     };
 
-    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
     tasks.push(task);
     localStorage.setItem("tasks", JSON.stringify(tasks));
 
-    alert("Task saved!");
+    alert("Task saved successfully!");
     displayEmployeeTasks();
   }
 
   function displayEmployeeTasks() {
     const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-    const employeeName = localStorage.getItem('employeeName');
-    const taskList = tasks.filter(task => task.employee === employeeName);
-
-    const taskListContainer = document.getElementById("task-list");
-    taskListContainer.innerHTML = taskList.map(task => `
+    const employeeName = localStorage.getItem("employeeName");
+    const taskList = tasks.filter(task => task.employeeName === employeeName);
+    const taskListHtml = taskList.map(task => `
       <div class="task">
-        <strong>${task.companyName}</strong> - ${task.completionDate} - ${task.task}
-        <button onclick="editTask(${task.id})">Edit</button>
+        <h4>${task.companyName} - ${task.service}</h4>
+        <p>${task.description}</p>
+        <p>Status: <span class="status-${task.status}">${task.status}</span></p>
+        <p>Start Date: ${task.startDate} | Expected End Date: ${task.expectedEndDate}</p>
         <button onclick="deleteTask(${task.id})">Delete</button>
+        <button onclick="editTask(${task.id})">Edit</button>
       </div>
     `).join('');
-  }
-
-  function editTask(id) {
-    const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-    const task = tasks.find(t => t.id === id);
-    
-    document.getElementById("company-name").value = task.companyName;
-    document.getElementById("completion-date").value = task.completionDate;
-    document.getElementById("task-description").value = task.task;
-    localStorage.setItem('editingTaskId', id);
-  }
-
-  function deleteTask(id) {
-    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-    tasks = tasks.filter(task => task.id !== id);
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-
-    displayEmployeeTasks();
+    document.getElementById("task-list").innerHTML = taskListHtml;
   }
 
   function displayAdminTasks() {
     const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-    const taskListContainer = document.getElementById("admin-task-list");
-    
-    taskListContainer.innerHTML = tasks.map(task => `
+    const taskListHtml = tasks.map(task => `
       <div class="task">
-        <strong>${task.companyName}</strong> - ${task.completionDate} - ${task.task} 
-        (by ${task.employee})
+        <h4>${task.companyName} - ${task.service}</h4>
+        <p>Employee: ${task.employeeName}</p>
+        <p>${task.description}</p>
+        <p>Status: <span class="status-${task.status}">${task.status}</span></p>
+        <p>Start Date: ${task.startDate} | Expected End Date: ${task.expectedEndDate}</p>
       </div>
     `).join('');
+    document.getElementById("admin-task-list").innerHTML = taskListHtml;
   }
 
-  function logout() {
-    // Clear localStorage to remove the logged-in user data
-    localStorage.removeItem('role');
-    localStorage.removeItem('employeeName');
+  function deleteTask(taskId) {
+    const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    const updatedTasks = tasks.filter(task => task.id !== taskId);
+    localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+    displayEmployeeTasks();
+  }
+
+  function editTask(taskId) {
+    const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    const task = tasks.find(task => task.id === taskId);
     
-    // Redirect the user back to the login page
-    document.getElementById('login-container').style.display = 'block';
-    document.getElementById('employee-container').style.display = 'none';
-    document.getElementById('admin-container').style.display = 'none';
+    document.getElementById("company-name").value = task.companyName;
+    document.getElementById("service").value = task.service;
+    document.getElementById("start-date").value = task.startDate;
+    document.getElementById("expected-end-date").value = task.expectedEndDate;
+    document.getElementById("task-description").value = task.description;
+    document.getElementById("task-status").value = task.status;
     
-    // Clear any other inputs (optional)
-    document.getElementById("email").value = "";
-    document.getElementById("password").value = "";
+    deleteTask(taskId); // Delete the task for editing before re-adding it
   }
 
-  // Show appropriate dashboard based on user role
-  if (localStorage.getItem('role') === 'admin') {
-    showAdminDashboard();
-  } else if (localStorage.getItem('role') === 'employee') {
-    showEmployeeDashboard();
-  }
-
+  window.onload = () => {
+    const role = localStorage.getItem("role");
+    if (role === "admin") {
+      showAdminDashboard();
+    } else if (role === "employee") {
+      showEmployeeDashboard();
+    }
+  };
 </script>
 
 </body>
